@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Blantikautoparts - iOS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- HTML5 QR Code / Barcode Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom iOS Blur Backdrop */
+        .ios-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        /* Smooth scrolling & hide scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-[#F2F2F7] text-slate-900 antialiased min-h-screen pb-28 selection:bg-blue-500 selection:text-white">
+
+    <!-- iOS Header / Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-[#F2F2F7]/80 ios-blur border-b border-slate-200/80 pt-safe">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="bg-blue-600 text-white w-9 h-9 rounded-full flex items-center justify-center font-bold text-base shadow-sm">
+                    <i class="fa-solid fa-car"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-tight text-slate-900 leading-none">Blantikautoparts</h1>
+                    <p class="text-[10px] text-blue-600 font-semibold tracking-wider uppercase mt-0.5">Japan Spec iOS</p>
+                </div>
+            </div>
+            <button onclick="openModal('add')" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all">
+                <i class="fa-solid fa-plus text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 pt-4 space-y-4">
+        
+        <!-- Total Card -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-400">Total Sparepart</p>
+                    <h2 class="text-xl font-bold text-slate-900" id="statTotalItems">0 <span class="text-xs font-normal text-slate-500">Item</span></h2>
+                </div>
+            </div>
+            <button onclick="resetData()" class="p-2 text-slate-400 hover:text-red-500 active:scale-90 transition" title="Reset Data">
+                <i class="fa-solid fa-rotate-right text-sm"></i>
+            </button>
+        </div>
+
+        <!-- iOS Search Bar -->
+        <div class="relative flex items-center gap-2">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" oninput="renderTable()" placeholder="Cari nama, part number, atau mobil..."
+                    class="w-full bg-[#E3E3E8] text-slate-900 text-sm pl-9 pr-8 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder:text-slate-500">
+            </div>
+            <!-- Scanner Button in Search -->
+            <button onclick="startScanner('search')" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white p-2.5 rounded-xl shadow-sm transition flex items-center justify-center shrink-0" title="Scan Barcode / QR">
+                <i class="fa-solid fa-barcode text-base"></i>
+            </button>
+        </div>
+
+        <!-- Filter Chips (Horizontal Scroll iOS Style) -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+            <select id="filterCategory" onchange="renderTable()" class="bg-white text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 shadow-sm focus:outline-none">
+                <option value="">Semua Kategori</option>
+                <option value="Mesin">Mesin & Filter</option>
+                <option value="Kaki-kaki">Kaki-kaki & Suspensi</option>
+                <option value="Rem">Pengereman</option>
+                <option value="Kelistrikan">Kelistrikan & Aki</option>
+                <option value="Bodi & Interior">Bodi & Interior</option>
+                <option value="Lainnya">Lainnya</option>
+            </select>
+            <select id="filterBrand" onchange="renderTable()" class="bg-white text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 shadow-sm focus:outline-none">
+                <option value="">Semua Merk</option>
+            </select>
+        </div>
+
+        <!-- Items Group Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div id="sparepartList" class="divide-y divide-slate-100">
+                <!-- Content dynamically inserted via JavaScript -->
+            </div>
+
+            <!-- Empty state -->
+            <div id="emptyState" class="hidden p-8 text-center">
+                <div class="text-slate-300 text-4xl mb-2"><i class="fa-solid fa-box-open"></i></div>
+                <p class="text-slate-500 text-xs font-medium">Tidak ada sparepart ditemukan.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- iOS Bottom Dock Bar -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/80 ios-blur border-t border-slate-200/80 pb-safe">
+        <div class="max-w-md mx-auto px-6 py-2.5 flex justify-around items-center text-center">
+            <button class="flex flex-col items-center gap-0.5 text-blue-600">
+                <i class="fa-solid fa-layer-group text-lg"></i>
+                <span class="text-[10px] font-medium">Inventori</span>
+            </button>
+            <button onclick="openModal('add')" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-600 transition">
+                <i class="fa-solid fa-circle-plus text-lg"></i>
+                <span class="text-[10px] font-medium">Tambah</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal (iOS Sheet) -->
+    <div id="partModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden transition-opacity">
+        <div class="bg-[#F2F2F7] w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col transform transition-transform">
+            <!-- Modal Header -->
+            <div class="px-5 py-3.5 bg-white border-b border-slate-200/80 flex justify-between items-center sticky top-0 z-10">
+                <button type="button" onclick="closeModal()" class="text-blue-600 text-sm font-normal">Batal</button>
+                <h3 id="modalTitle" class="font-semibold text-slate-900 text-sm">Tambah Sparepart</h3>
+                <button type="button" onclick="document.getElementById('submitBtn').click()" class="text-blue-600 font-bold text-sm">Simpan</button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="partForm" onsubmit="handleFormSubmit(event)" class="p-4 space-y-4 overflow-y-auto">
+                <input type="hidden" id="partId">
+                
+                <div class="bg-white rounded-xl p-3 space-y-3 shadow-sm border border-slate-100">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">Nama Sparepart</label>
+                        <input type="text" id="partName" required placeholder="Filter Oli / Kampas Rem" 
+                            class="w-full text-sm text-slate-900 focus:outline-none bg-transparent">
+                    </div>
+                    <hr class="border-slate-100">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider">Kode Part / No. Part</label>
+                            <button type="button" onclick="startScanner('form')" class="text-blue-600 text-xs font-semibold flex items-center gap-1 hover:underline">
+                                <i class="fa-solid fa-barcode"></i> Scan
+                            </button>
+                        </div>
+                        <input type="text" id="partCode" placeholder="04465-YZZE1" 
+                            class="w-full text-sm text-slate-900 focus:outline-none bg-transparent font-mono">
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-3 space-y-3 shadow-sm border border-slate-100">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">Kendaraan / Mobil</label>
+                        <input type="text" id="partCar" required placeholder="Avanza / Jazz / Xpander" 
+                            class="w-full text-sm text-slate-900 focus:outline-none bg-transparent">
+                    </div>
+                    <hr class="border-slate-100">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">Tahun Mobil</label>
+                        <input type="text" id="partYear" placeholder="2012 - 2021" 
+                            class="w-full text-sm text-slate-900 focus:outline-none bg-transparent">
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-3 space-y-3 shadow-sm border border-slate-100">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">Kategori</label>
+                        <select id="partCategory" required class="w-full text-sm text-slate-900 focus:outline-none bg-transparent">
+                            <option value="Mesin">Mesin & Filter</option>
+                            <option value="Kaki-kaki">Kaki-kaki & Suspensi</option>
+                            <option value="Rem">Pengereman</option>
+                            <option value="Kelistrikan">Kelistrikan & Aki</option>
+                            <option value="Bodi & Interior">Bodi & Interior</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <hr class="border-slate-100">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-1">Merk / Brand</label>
+                        <input type="text" id="partBrand" required placeholder="Denso / NGK / KYB" 
+                            class="w-full text-sm text-slate-900 focus:outline-none bg-transparent">
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-3 space-y-3 shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-medium text-slate-600">Jumlah Stok</label>
+                        <input type="number" id="partStock" min="0" required placeholder="0" 
+                            class="w-20 text-right text-sm font-bold text-slate-900 focus:outline-none bg-transparent">
+                    </div>
+                    <hr class="border-slate-100">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-medium text-slate-600">Harga Beli (Modal)</label>
+                        <input type="number" id="partBuyPrice" min="0" required placeholder="0" 
+                            class="w-32 text-right text-sm font-semibold text-slate-700 focus:outline-none bg-transparent">
+                    </div>
+                    <hr class="border-slate-100">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-medium text-slate-600">Harga Jual</label>
+                        <input type="number" id="partSellPrice" min="0" required placeholder="0" 
+                            class="w-32 text-right text-sm font-bold text-blue-600 focus:outline-none bg-transparent">
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="hidden"></button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Banner -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 backdrop-blur-md text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg transform -translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
+        <span id="toastIcon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+        <span id="toastMessage">Berhasil menyimpan data</span>
+    </div>
+
+    <!-- Barcode Scanner Modal (iOS Sheet) -->
+    <div id="scannerModal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-end sm:items-center justify-center hidden transition-opacity">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col p-4 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-camera text-blue-600"></i> Scan Barcode / QR Code
+                </h3>
+                <button onclick="stopScanner()" class="text-slate-400 hover:text-slate-600 p-1 text-sm font-bold">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="relative w-full rounded-xl overflow-hidden bg-black min-h-[260px] flex items-center justify-center">
+                <div id="reader" class="w-full"></div>
+            </div>
+
+            <p class="text-center text-xs text-slate-500 font-medium">Arahkan kamera ke Barcode / Kode Part sparepart</p>
+        </div>
+    </div>
+
+    <script>
+        // Initial Default Spareparts Data
+        const defaultParts = [
+            { id: 1, name: "Kampas Rem Depan Set", code: "04465-YZZE1", year: "2012 - 2021", category: "Rem", brand: "Akimbo / Genuine", car: "Toyota Avanza / Xenia", stock: 8, buyPrice: 175000, sellPrice: 240000 },
+            { id: 2, name: "Filter Oli Mesin", code: "15400-RTA-003", year: "2014 - 2022", category: "Mesin", brand: "Denso", car: "Honda Jazz / Brio", stock: 15, buyPrice: 35000, sellPrice: 55000 },
+            { id: 3, name: "Busi Iridium Standard", code: "IZFR6K11", year: "2017 - 2023", category: "Kelistrikan", brand: "NGK", car: "Mitsubishi Xpander", stock: 2, buyPrice: 95000, sellPrice: 135000 },
+            { id: 4, name: "Link Stabilizer Depan", code: "SL-S080", year: "2012 - 2018", category: "Kaki-kaki", brand: "555 / Japan", car: "Suzuki Ertiga", stock: 4, buyPrice: 110000, sellPrice: 165000 },
+            { id: 5, name: "Shock Absorber Belakang", code: "48530-09L10", year: "2016 - 2023", category: "Kaki-kaki", brand: "KYB (Kayaba)", car: "Toyota Innova Reborn", stock: 1, buyPrice: 450000, sellPrice: 620000 }
+        ];
+
+        let spareparts = JSON.parse(localStorage.getItem('spareparts_data')) || defaultParts;
+        let html5QrCode = null;
+        let scanTargetMode = 'search'; // 'search' or 'form'
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        }
+
+        // Barcode Scanner Logic
+        function startScanner(mode = 'search') {
+            scanTargetMode = mode;
+            document.getElementById('scannerModal').classList.remove('hidden');
+
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+                .catch(err => {
+                    showToast("Gagal mengakses kamera!", true);
+                    stopScanner();
+                });
+        }
+
+        function stopScanner() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('scannerModal').classList.add('hidden');
+                }).catch(() => {
+                    document.getElementById('scannerModal').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('scannerModal').classList.add('hidden');
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            stopScanner();
+            showToast(`Scanned: ${decodedText}`);
+
+            if (scanTargetMode === 'search') {
+                const searchInput = document.getElementById('searchInput');
+                searchInput.value = decodedText;
+                renderTable();
+            } else if (scanTargetMode === 'form') {
+                document.getElementById('partCode').value = decodedText;
+            }
+        }
+
+        function updateBrandFilterOptions() {
+            const filterBrandSelect = document.getElementById('filterBrand');
+            const currentSelected = filterBrandSelect.value;
+            const brands = [...new Set(spareparts.map(p => p.brand || 'Lainnya'))].sort();
+            
+            filterBrandSelect.innerHTML = '<option value="">Semua Merk</option>';
+            brands.forEach(b => {
+                if(b) {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.textContent = b;
+                    if(b === currentSelected) opt.selected = true;
+                    filterBrandSelect.appendChild(opt);
+                }
+            });
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastMsg.textContent = message;
+            toastIcon.innerHTML = isError ? '<i class="fa-solid fa-circle-exclamation text-amber-400"></i>' : '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            
+            toast.classList.remove('-translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('-translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function saveData() {
+            localStorage.setItem('spareparts_data', JSON.stringify(spareparts));
+        }
+
+        function renderTable() {
+            updateBrandFilterOptions();
+
+            const container = document.getElementById('sparepartList');
+            const emptyState = document.getElementById('emptyState');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const categoryVal = document.getElementById('filterCategory').value;
+            const brandVal = document.getElementById('filterBrand').value;
+
+            container.innerHTML = '';
+
+            const filtered = spareparts.filter(item => {
+                const itemBrand = item.brand || '';
+                const itemCode = item.code || '';
+                const itemYear = item.year || '';
+                const matchesSearch = item.name.toLowerCase().includes(searchVal) || 
+                                      item.car.toLowerCase().includes(searchVal) || 
+                                      item.category.toLowerCase().includes(searchVal) ||
+                                      itemCode.toLowerCase().includes(searchVal) ||
+                                      itemYear.toLowerCase().includes(searchVal) ||
+                                      itemBrand.toLowerCase().includes(searchVal);
+                const matchesCat = categoryVal === "" || item.category === categoryVal;
+                const matchesBrand = brandVal === "" || itemBrand === brandVal;
+                return matchesSearch && matchesCat && matchesBrand;
+            });
+
+            document.getElementById('statTotalItems').innerHTML = `${spareparts.length} <span class="text-xs font-normal text-slate-500">Item</span>`;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 hover:bg-slate-50 transition flex items-center justify-between gap-3";
+                
+                card.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 mb-0.5">
+                            <h3 class="font-semibold text-slate-900 text-sm truncate">${item.name}</h3>
+                            ${item.code ? `<span class="bg-slate-100 text-slate-600 text-[10px] font-mono font-medium px-1.5 py-0.2 rounded border border-slate-200">${item.code}</span>` : ''}
+                        </div>
+                        <p class="text-xs text-slate-500 truncate flex items-center gap-1">
+                            <i class="fa-solid fa-car text-[10px] text-slate-400"></i> ${item.car} ${item.year ? `(${item.year})` : ''}
+                        </p>
+                        <div class="flex items-center gap-2 mt-1.5">
+                            <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">${item.brand || 'Lainnya'}</span>
+                            <span class="text-xs font-bold text-blue-600">${formatRupiah(item.sellPrice)}</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${item.stock < 3 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                            ${item.stock} unit
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openModal('edit', ${item.id})" class="p-1 text-slate-400 hover:text-blue-600 transition">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button onclick="deletePart(${item.id})" class="p-1 text-slate-400 hover:text-red-500 transition">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openModal(mode, id = null) {
+            const modal = document.getElementById('partModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('partForm');
+            
+            form.reset();
+            document.getElementById('partId').value = '';
+
+            if (mode === 'edit' && id !== null) {
+                title.textContent = 'Edit Sparepart';
+                const part = spareparts.find(i => i.id === id);
+                if (part) {
+                    document.getElementById('partId').value = part.id;
+                    document.getElementById('partName').value = part.name;
+                    document.getElementById('partCode').value = part.code || '';
+                    document.getElementById('partYear').value = part.year || '';
+                    document.getElementById('partCategory').value = part.category;
+                    document.getElementById('partBrand').value = part.brand || '';
+                    document.getElementById('partCar').value = part.car;
+                    document.getElementById('partStock').value = part.stock;
+                    document.getElementById('partBuyPrice').value = part.buyPrice;
+                    document.getElementById('partSellPrice').value = part.sellPrice;
+                }
+            } else {
+                title.textContent = 'Tambah Sparepart';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('partModal').classList.add('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('partId').value;
+            const name = document.getElementById('partName').value.trim();
+            const code = document.getElementById('partCode').value.trim();
+            const year = document.getElementById('partYear').value.trim();
+            const category = document.getElementById('partCategory').value;
+            const brand = document.getElementById('partBrand').value.trim();
+            const car = document.getElementById('partCar').value.trim();
+            const stock = parseInt(document.getElementById('partStock').value);
+            const buyPrice = parseInt(document.getElementById('partBuyPrice').value);
+            const sellPrice = parseInt(document.getElementById('partSellPrice').value);
+
+            if (sellPrice < buyPrice) {
+                showToast("Peringatan: Harga jual lebih rendah dari modal!", true);
+            }
+
+            if (id) {
+                const index = spareparts.findIndex(i => i.id == id);
+                if (index !== -1) {
+                    spareparts[index] = { id: Number(id), name, code, year, category, brand, car, stock, buyPrice, sellPrice };
+                    showToast("Data berhasil diperbarui!");
+                }
+            } else {
+                const newId = spareparts.length > 0 ? Math.max(...spareparts.map(i => i.id)) + 1 : 1;
+                spareparts.push({ id: newId, name, code, year, category, brand, car, stock, buyPrice, sellPrice });
+                showToast("Sparepart berhasil ditambahkan!");
+            }
+
+            saveData();
+            renderTable();
+            closeModal();
+        }
+
+        function deletePart(id) {
+            spareparts = spareparts.filter(i => i.id !== id);
+            saveData();
+            renderTable();
+            showToast("Sparepart dihapus.");
+        }
+
+        function resetData() {
+            spareparts = [...defaultParts];
+            saveData();
+            renderTable();
+            showToast("Data direset.");
+        }
+
+        window.onload = function() {
+            renderTable();
+        }
+    </script>
+</body>
+</html>
